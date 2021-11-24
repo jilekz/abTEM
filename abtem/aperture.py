@@ -41,3 +41,25 @@ class BullseyeAperture(HasAcceleratorMixin):
             aperture[(d < self._cross / 2) * (alpha < self._outer_angle)] = 1.
 
         return aperture
+
+
+class DeviatedAperture(HasAcceleratorMixin):
+    def __init__(self, aperture_angle, energy=None, x_0=0, y_0=0):
+        #x_0 - aperture deviation from center in x direction [mrad]
+        #y_0 - aperture deviation from center in y direction [mrad]
+        self._aperture_angle = aperture_angle*1e-3 #[rad]
+        self._accelerator = Accelerator(energy=energy)
+        self._x_0 = x_0*1e-3 #[rad]
+        self._y_0 = y_0*1e-3 #[rad]
+
+    def evaluate(self, alpha, phi): # alpha [rad] phi [rad]
+        xp = get_array_module(alpha)
+
+        if type(phi) == type(None):
+                phi=xp.array([0])
+
+        aperture = xp.ones_like(alpha)
+        
+        aperture[ (alpha**2+self._x_0**2+self._y_0**2-2*alpha*(xp.cos(phi)*self._x_0+xp.sin(phi)*self._y_0) ) >self._aperture_angle**2 ] = 0.
+        
+        return aperture
