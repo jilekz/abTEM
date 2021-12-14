@@ -42,6 +42,59 @@ class BullseyeAperture(HasAcceleratorMixin):
 
         return aperture
 
+class DeviatedAnularAperture(HasAcceleratorMixin):
+    def __init__(self, aperture_angle, energy=None, x_0=0, y_0=0,inner_aperture_angle=0, spokes = 3, spoke_thickness=1):
+        #x_0 - aperture deviation from center in x direction [mrad]
+        #y_0 - aperture deviation from center in y direction [mrad]
+        #spoke_thickness - thickness of spokes in [mrad]
+        #spokes - number of spokes 
+        self._aperture_angle = aperture_angle*1e-3 #[rad]
+        self._inner_aperture_angle = inner_aperture_angle*1e-3 #[rad]
+        self._accelerator = Accelerator(energy=energy)
+        self._x_0 = x_0*1e-3 #[rad]
+        self._y_0 = y_0*1e-3 #[rad]
+        self._spokes = spokes #num of spokes
+        self._spoke_thickness = spoke_thickness*1e-3 #[rad]
+
+    def evaluate(self, alpha, phi): # alpha [rad] phi [rad]
+        xp = get_array_module(alpha)
+
+        if type(phi) == type(None):
+                phi=xp.array([0])
+
+        aperture = xp.ones_like(alpha)
+
+        x = xp.cos(phi)*alpha-self._x_0
+        y = xp.sin(phi)*alpha-self._y_0
+
+        r_sq=x**2+y**2
+
+        aperture[ np.logical_or( r_sq > self._aperture_angle**2 , r_sq < self._inner_aperture_angle**2)  ] = 0
+        if self._inner_aperture_angle > 0:
+            aperture[ r_sq < self._inner_aperture_angle**2 ] = 0
+        if self._spokes > 0 and self._spoke_thickness > 0:
+            for index_spoke in range(self._spokes):
+                phi_spoke = 2*xp.pi/self._spokes * index_spoke
+                
+                vec = xp.array([xp.cos(phi_spoke),xp.sin(phi_spoke)]) #vec is line intercepting (0,0) and having angle phi_spoke
+                normal = xp.array([xp.cos(xp.pi/2+phi_spoke),xp.sin(xp.pi/2+phi_spoke)]) #normal to line along phi_spoke angle (along vec)
+
+                a = normal[0] 
+                b = normal[1]
+                d = xp.abs(a*x+b*y)/xp.sqrt(a**2+b**2) # dist of a point from a line 
+
+                shape_orig = x.shape
+                shape_new = x.size
+                x_r= x.reshape(shape_new)
+                y_r = y.reshape(shape_new)
+
+                dot_product = np.sum(vec*np.array([x_r,y_r]).T,axis=1)
+                dot_product = dot_product.T
+                dot_product = dot_product.reshape(shape_orig)
+
+                aperture[ np.logical_and(d < self._spoke_thickness / 2 , dot_product >= 0 ) ] = 0
+        
+        return aperture
 
 class DeviatedAperture(HasAcceleratorMixin):
     def __init__(self, aperture_angle, energy=None, x_0=0, y_0=0):
