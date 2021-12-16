@@ -611,3 +611,20 @@ def cartesian2polar(cartesian):
             else:
                 polar[modulus_name] = cartesian[modulus_name]
     return polar
+
+def Haider2Krivanek(C1,A1,C3,B2,A2=0+0*1j):
+    """
+    Convert a few Haider's aberration coefficients in [m] to Krivanek's aberration coefficients in [A]
+    """
+    cartesian = dict()
+    
+    cartesian['C10']  = C1.real / 1e-10
+    cartesian['C12a'] = A1.real / 1e-10
+    cartesian['C12b'] = A1.imag / 1e-10
+    cartesian['C21a'] = 3*B2.conjugate().real / 1e-10 # there should be conjugation!
+    cartesian['C21b'] = 3*B2.conjugate().imag / 1e-10 # there should be conjugation!
+    cartesian['C30']  = C3 / 1e-10
+    
+    cartesian['C23a']  = A2.real / 1e-10
+    cartesian['C23b']  = A2.imag / 1e-10
+    return(cartesian)
