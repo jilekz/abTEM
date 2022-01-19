@@ -116,3 +116,30 @@ class DeviatedAperture(HasAcceleratorMixin):
         aperture[ (alpha**2+self._x_0**2+self._y_0**2-2*alpha*(xp.cos(phi)*self._x_0+xp.sin(phi)*self._y_0) ) >self._aperture_angle**2 ] = 0.
         
         return aperture
+
+class MultipleDeviatedApertures(HasAcceleratorMixin):
+    def __init__(self, aperture_angle, energy=None, x_0=np.array([0]), y_0=np.array([0])):
+        #x_0 - aperture deviation from center in x direction [mrad]
+        #y_0 - aperture deviation from center in y direction [mrad]
+        self._aperture_angle = aperture_angle*1e-3 #[rad]
+        self._accelerator = Accelerator(energy=energy)
+        self._x_0 = np.array(x_0) * 1e-3 #[rad]
+        self._y_0 = np.array(y_0) * 1e-3 #[rad]
+        
+        assert np.shape(x_0) == np.shape(y_0)
+        
+
+
+    def evaluate(self, alpha, phi): # alpha [rad] phi [rad]
+        xp = get_array_module(alpha)
+
+        if type(phi) == type(None):
+                phi=xp.array([0])
+
+        aperture = xp.zeros_like(alpha)
+
+        for i in range(len(self._x_0)):
+            tmp_aperture = DeviatedAperture(self._aperture_angle/1e-3,x_0=self._x_0[i]/1e-3,y_0=self._y_0[i]/1e-3).evaluate(alpha,phi)
+            aperture = xp.logical_or(aperture,tmp_aperture)
+        
+        return aperture
