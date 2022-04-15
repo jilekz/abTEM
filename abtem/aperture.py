@@ -43,7 +43,7 @@ class BullseyeAperture(HasAcceleratorMixin):
         return aperture
 
 class DeviatedAnularAperture(HasAcceleratorMixin):
-    def __init__(self, aperture_angle, energy=None, x_0=0, y_0=0,inner_aperture_angle=0, spokes = 3, spoke_thickness=1):
+    def __init__(self, aperture_angle, energy=None, x_0=0, y_0=0,inner_aperture_angle=0, spokes = 3, spoke_thickness=1,fnc= lambda al, ph : 0):
         #x_0 - aperture deviation from center in x direction [mrad]
         #y_0 - aperture deviation from center in y direction [mrad]
         #spoke_thickness - thickness of spokes in [mrad]
@@ -55,6 +55,7 @@ class DeviatedAnularAperture(HasAcceleratorMixin):
         self._y_0 = y_0*1e-3 #[rad]
         self._spokes = spokes #num of spokes
         self._spoke_thickness = spoke_thickness*1e-3 #[rad]
+        self._fnc=fnc
 
     def evaluate(self, alpha, phi): # alpha [rad] phi [rad]
         xp = get_array_module(alpha)
@@ -62,7 +63,7 @@ class DeviatedAnularAperture(HasAcceleratorMixin):
         if type(phi) == type(None):
                 phi=xp.array([0])
 
-        aperture = xp.ones_like(alpha)
+        aperture = xp.ones_like(alpha,dtype=xp.complex64)
 
         x = xp.cos(phi)*alpha-self._x_0
         y = xp.sin(phi)*alpha-self._y_0
@@ -94,6 +95,10 @@ class DeviatedAnularAperture(HasAcceleratorMixin):
 
                 aperture[ np.logical_and(d < self._spoke_thickness / 2 , dot_product >= 0 ) ] = 0
         
+        nonzero_selection = aperture>0
+        
+        aperture[nonzero_selection]*=self._fnc(alpha[nonzero_selection],phi[nonzero_selection])
+
         return aperture
 
 class DeviatedAperture(HasAcceleratorMixin):
