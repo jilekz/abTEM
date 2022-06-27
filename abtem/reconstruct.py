@@ -13,6 +13,7 @@ def _run_epie(object,
               maxiter: int,
               alpha: float = 1.,
               beta: float = 1.,
+              fac: float = 1.,
               fix_probe: bool = False,
               fix_com: bool = False,
               return_iterations: bool = False,
@@ -72,12 +73,16 @@ def _run_epie(object,
             g = illuminated_object * probe
             gprime = xp.fft.ifft2(diffraction_pattern * xp.exp(1j * xp.angle(xp.fft.fft2(g))))
 
-            object = illuminated_object + alpha * (gprime - g) * xp.conj(probe) / (xp.max(xp.abs(probe)) ** 2)
+            #object = illuminated_object + alpha * (gprime - g) * xp.conj(probe) / (xp.max(xp.abs(probe)) ** 2)
+            #w=np.abs(a)**2/(fac*np.abs(np.max(a))**2+(1-fac)*np.abs(a)**2)
+            object = illuminated_object + alpha * (gprime - g) * xp.conj(probe) /(fac*xp.max(xp.abs(probe))**2+(1-fac)*xp.abs(probe)**2)
             old_position = position
 
             if not fix_probe:
                 probe = probe + beta * (gprime - g) * xp.conj(illuminated_object) / (
-                        xp.max(xp.abs(illuminated_object)) ** 2)
+                        fac*xp.max(xp.abs(illuminated_object))**2+(1-fac)*xp.abs(illuminated_object)**2)
+#                probe = probe + beta * (gprime - g) * xp.conj(illuminated_object) / (
+#                        xp.max(xp.abs(illuminated_object)) ** 2)
 
             # SSE += xp.sum(xp.abs(G) ** 2 - diffraction_pattern) ** 2
 
@@ -118,6 +123,7 @@ def epie(measurement: Measurement,
          maxiter: int = 5,
          alpha: float = 1.,
          beta: float = 1.,
+         fac: float = 1.,
          fix_probe: bool = False,
          fix_com: bool = False,
          return_iterations: bool = False,
@@ -198,6 +204,7 @@ def epie(measurement: Measurement,
                        maxiter=maxiter,
                        alpha=alpha,
                        beta=beta,
+                       fac=fac,
                        return_iterations=return_iterations,
                        fix_probe=fix_probe,
                        fix_com=fix_com,
