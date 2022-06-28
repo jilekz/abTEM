@@ -68,7 +68,9 @@ def _run_epie(object,
             position = xp.array(positions[j])
 
             diffraction_pattern = xp.array(diffraction_patterns[j])
-            illuminated_object = fft_shift(object, old_position - position)
+            illuminated_object = object
+            
+            probe = fft_shift(probe, - old_position + position)
 
             g = illuminated_object * probe
             gprime = xp.fft.ifft2(diffraction_pattern * xp.exp(1j * xp.angle(xp.fft.fft2(g))))
@@ -88,7 +90,7 @@ def _run_epie(object,
 
             inner_pbar.update(1)
 
-        object = fft_shift(object, position)
+        probe = fft_shift(probe, - position)
 
         if fix_com:
             com = center_of_mass(xp.fft.fftshift(xp.abs(probe) ** 2))
